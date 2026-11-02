@@ -1,0 +1,30 @@
+# Reusable test template: run tests, publish results.
+parameters:
+  - name: buildConfiguration
+    type: string
+    default: Release
+  - name: testProject
+    type: string
+    default: test/SampleMath.Tests/SampleMath.Tests.csproj
+
+jobs:
+  - job: Test
+    displayName: Test (${{ parameters.buildConfiguration }})
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - task: UseDotNet@2
+        displayName: Install .NET SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
+
+      - task: DotNetCoreCLI@2
+        displayName: Run tests
+        inputs:
+          command: test
+          projects: ${{ parameters.testProject }}
+          arguments: >-
+            --configuration ${{ parameters.buildConfiguration }}
+            --logger trx
+          publishTestResults: true

@@ -1,0 +1,54 @@
+# Reusable publish template: version from the git tag, pack the
+# library, push it to an Azure Artifacts feed.
+#
+# Version rule (see scripts/version-from-tag.sh):
+#   refs/tags/v1.2.3        -> 1.2.3
+#   refs/tags/v2.0.0-beta.1 -> 2.0.0-beta.1
+#   anything else           -> 0.1.0-ci.<build-number> (fallback; the
+#                              Publish stage only runs on tags, so this
+#                              path is defensive, not expected)
+parameters:
+  - name: buildConfiguration
+    type: string
+    default: Release
+  - name: packageProject
+    type: string
+    default: src/SampleMath/SampleMath.csproj
+  - name: feedName
+    type: string
+    default: <your-feed>
+
+jobs:
+  - job: Publish
+    displayName: Pack and push NuGet package
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - task: UseDotNet@2
+        displayName: Install .NET SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
+
+      - bash: |
+          VERSION="$(bash scripts/version-from-tag.sh)"
+          echo "##vso[task.setvariable variable=packageVersion]$VERSION"
+          echo "Package version: $VERSION"
+        displayName: Compute package version from git tag
+
+      - task: DotNetCoreCLI@2
+        displayName: Pack
+        inputs:
+          command: pack
+          packagesToPack: ${{ parameters.packageProject }}
+          configuration: ${{ parameters.buildConfiguration }}
+          versioningScheme: byEnvVar
+          versionEnvVar: packageVersion
+
+      - task: DotNetCoreCLI@2
+        displayName: Push to Azure Artifacts feed
+        inputs:
+          command: push
+          packagesToPush: $(Build.ArtifactStagingDirectory)/*.nupkg
+          nuGetFeedType: internal
+          publishVstsFeed: ${{ parameters.feedName }}

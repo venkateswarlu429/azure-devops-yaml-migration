@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackageId>SampleMath</PackageId>
+    <!-- Version is NOT set here on purpose: it comes from the git tag
+         at pack time (see templates/publish.yml). Setting it here too
+         would let the two disagree. -->
+    <Authors>Venkateswarlu Maddula</Authors>
+    <Description>Small sample math library used to demonstrate Azure DevOps YAML pipeline migration and NuGet publishing.</Description>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+</Project>

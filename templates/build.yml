@@ -1,0 +1,35 @@
+# Reusable build template: restore + build.
+parameters:
+  - name: buildConfiguration
+    type: string
+    default: Release
+  - name: solution
+    type: string
+    default: src/SampleMath/SampleMath.csproj
+
+jobs:
+  - job: Build
+    displayName: Build (${{ parameters.buildConfiguration }})
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - task: UseDotNet@2
+        displayName: Install .NET SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
+
+      - task: DotNetCoreCLI@2
+        displayName: Restore
+        inputs:
+          command: restore
+          projects: ${{ parameters.solution }}
+
+      - task: DotNetCoreCLI@2
+        displayName: Build
+        inputs:
+          command: build
+          projects: ${{ parameters.solution }}
+          arguments: >-
+            --configuration ${{ parameters.buildConfiguration }}
+            --no-restore

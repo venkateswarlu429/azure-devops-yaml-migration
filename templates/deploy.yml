@@ -1,0 +1,28 @@
+# Reusable deploy template: deployment job to an environment.
+#
+# Approval model: who may approve a deploy is NOT decided here. It is
+# configured as checks on the environment in the Azure DevOps UI
+# (Environment -> Approvals and checks). That way the approval applies
+# no matter which pipeline deploys to the environment.
+parameters:
+  - name: environment
+    type: string
+    default: <your-environment>
+
+jobs:
+  - deployment: Deploy
+    displayName: Deploy to ${{ parameters.environment }}
+    pool:
+      vmImage: ubuntu-latest
+    environment: ${{ parameters.environment }}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - bash: |
+                echo "Deploying build $(Build.BuildNumber) to ${{ parameters.environment }}."
+                echo "Replace this step with the real deploy task for your"
+                echo "target (for example, an Azure Web App deploy task using"
+                echo "the service connection documented in"
+                echo "docs/service-connections.md)."
+              displayName: Deploy (placeholder step — replace per target)

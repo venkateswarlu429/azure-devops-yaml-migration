@@ -1,0 +1,81 @@
+# Multi-stage pipeline: build -> test -> publish -> deploy
+#
+# Triggers:
+#   - CI on main
+#   - PR validation on main
+#   - Tag pushes matching v* (these run the publish stage)
+# Replace <your-organization> / <your-project> / <your-feed> with your
+# real values, or better, keep them in the variable groups below.
+trigger:
+  branches:
+    include:
+      - main
+  tags:
+    include:
+      - v*
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  - group: app-shared
+  - name: buildConfiguration
+    value: Release
+  - name: feedName
+    value: <your-feed>
+  - name: deployEnvironment
+    value: <your-environment>
+
+stages:
+  - stage: Build
+    displayName: Build
+    jobs:
+      - template: templates/build.yml
+        parameters:
+          buildConfiguration: $(buildConfiguration)
+          solution: src/SampleMath/SampleMath.csproj
+
+  - stage: Test
+    displayName: Test
+    dependsOn: Build
+    jobs:
+      - template: templates/test.yml
+        parameters:
+          buildConfiguration: $(buildConfiguration)
+          testProject: test/SampleMath.Tests/SampleMath.Tests.csproj
+
+  # Publish runs ONLY on version tags (refs/tags/v*). A tag like
+  # v1.2.3 produces package version 1.2.3 (see templates/publish.yml).
+  - stage: Publish
+    displayName: Publish to Azure Artifacts
+    dependsOn:
+      - Build
+      - Test
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/v')
+    jobs:
+      - template: templates/publish.yml
+        parameters:
+          buildConfiguration: $(buildConfiguration)
+          packageProject: src/SampleMath/SampleMath.csproj
+          feedName: $(feedName)
+
+  # Deploy runs ONLY on main, after every earlier stage succeeds.
+  # Human approval is enforced by checks on the environment itself
+  # (configured in the Azure DevOps UI), not by this file.
+  - stage: Deploy
+    displayName: Deploy
+    dependsOn:
+      - Build
+      - Test
+      - Publish
+    condition: |
+      and(
+        succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/main')
+      )
+    jobs:
+      - template: templates/deploy.yml
+        parameters:
+          environment: $(deployEnvironment)
